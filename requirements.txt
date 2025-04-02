@@ -1,0 +1,16 @@
+ipykernel
+python-dotenv
+numpy
+pandas
+scikit-learn
+spacy
+nltk
+matplotlib
+seaborn
+skrub
+textblob
+mlextend
+rapidfuzz
+contractions
+langchain
+sentence_transformers
