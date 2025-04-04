@@ -1,47 +1,33 @@
 import string
-
 import contractions
 import nltk
 from nltk.corpus import stopwords, wordnet
 from nltk.tokenize import word_tokenize
-from textblob import TextBlob
+from nltk.stem import WordNetLemmatizer
 
 stop_words = set(stopwords.words("english"))
+lemmatizer = WordNetLemmatizer()
 
-def pos_tagger(nltk_tag: str) -> str:
-    """Map NLTK POS tags to WordNet POS tags."""
-    if nltk_tag.startswith("J"):
+def get_wordnet_pos(universal_tag):
+    if universal_tag == 'ADJ':
         return wordnet.ADJ
-    elif nltk_tag.startswith("V"):
+    elif universal_tag == 'VERB':
         return wordnet.VERB
-    elif nltk_tag.startswith("N"):
+    elif universal_tag == 'NOUN':
         return wordnet.NOUN
-    elif nltk_tag.startswith("R"):
+    elif universal_tag == 'ADV':
         return wordnet.ADV
-    return ""
+    else:
+        return wordnet.NOUN
 
-
-def lemmatize_tokens(tokens: list[str]) -> list[str]:
-    """Lemmatize tokens based on their POS tags."""
-    lemmatizer = nltk.WordNetLemmatizer()
-    pos_tagged = nltk.pos_tag(tokens)
-    return [
-        lemmatizer.lemmatize(token, pos_tagger(tag)) if pos_tagger(tag) else lemmatizer.lemmatize(token)
-        for token, tag in pos_tagged
+def preprocess_text(text):
+    text = contractions.fix(text)
+    text = text.lower().translate(str.maketrans("", "", string.punctuation))
+    tokens = word_tokenize(text)
+    pos_tags = nltk.pos_tag(tokens, tagset='universal')
+    cleaned_tokens = [
+        lemmatizer.lemmatize(token, get_wordnet_pos(pos))
+        for token, pos in pos_tags
+        if token not in stop_words and len(token) > 2
     ]
-
-def expand_contractions(text: str) -> str:
-    """Expand contractions in a given text."""
-    try:
-        if not isinstance(text, str) or not text.strip():
-            return text
-        expanded_text = contractions.fix(text)
-        return expanded_text  # type: ignore
-
-    except Exception as e:
-        print(f"Error expanding contractions in: {text}, Error: {e}")
-        return text
-
-
-# def preprocess_sentence(sentence: str, add_noun_phrases: bool = False, stopwords: bool = False) -> str:
-
+    return cleaned_tokens  # ← important: return tokens
