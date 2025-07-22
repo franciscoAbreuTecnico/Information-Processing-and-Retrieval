@@ -1,0 +1,7 @@
+=== KMEANS Clustering ===
+k =  5 | Silhouette: 0.0041 | Calinski-Harabasz: 175.93 | Davies-Bouldin: 10.4506
+k = 10 | Silhouette: 0.0070 | Calinski-Harabasz: 137.52 | Davies-Bouldin: 8.9299
+k = 15 | Silhouette: 0.0118 | Calinski-Harabasz: 124.71 | Davies-Bouldin: 7.1836
+k = 20 | Silhouette: 0.0133 | Calinski-Harabasz: 112.92 | Davies-Bouldin: 7.2953
+k = 25 | Silhouette: 0.0147 | Calinski-Harabasz: 102.27 | Davies-Bouldin: 6.9589
+k = 30 | Silhouette: 0.0156 | Calinski-Harabasz: 93.22 | Davies-Bouldin: 7.1068

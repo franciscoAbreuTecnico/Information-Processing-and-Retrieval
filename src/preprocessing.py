@@ -30,4 +30,4 @@ def preprocess_text(text):
         for token, pos in pos_tags
         if token not in stop_words and len(token) > 2
     ]
-    return cleaned_tokens  # ← important: return tokens
+    return cleaned_tokens

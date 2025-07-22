@@ -1,51 +1,47 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+import numpy as np
 
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.cluster import KMeans
+from sklearn.cluster import AgglomerativeClustering, KMeans
 from sklearn.metrics import silhouette_score, calinski_harabasz_score, davies_bouldin_score
 from sklearn.metrics.pairwise import cosine_distances
 from scipy.stats import entropy
 from scipy.special import rel_entr
-
+from scipy.stats import entropy
+from scipy.special import rel_entr
+from sklearn.metrics.pairwise import cosine_distances
 from preprocessing import preprocess_text
 
+from plots import plot_results
+
 def clustering(D, args=None):
-    # Extract document texts
     docs = [(doc.doc_id, f"{doc.title or ''} {doc.abstract or ''}") for doc in D if doc.abstract]
     doc_ids, texts = zip(*docs)
 
-    # Vectorize with lemmatization-aware tokenizer
-    # vectorizer = TfidfVectorizer(
-    #     max_df=0.8,
-    #     min_df=5,
-    #     stop_words='english',
-    #     tokenizer=preprocess_text,
-    #     preprocessor=None
-    # )
-    vectorizer = TfidfVectorizer(max_df=0.8, min_df=5, stop_words='english')
+    vectorizer = TfidfVectorizer(
+        max_df=0.8,
+        min_df=5,
+        stop_words='english',
+        tokenizer=preprocess_text,
+        preprocessor=None
+    )
 
     X = vectorizer.fit_transform(texts)
 
-    # Fixed k = 10
-    k = 10
+    # Fixed k = 25
+    k = 25
     kmeans = KMeans(n_clusters=k, random_state=42)
     labels = kmeans.fit_predict(X)
     score = silhouette_score(X, labels)
     print(f"k = {k}, silhouette score: {score:.4f}")
 
-    # Organize output clusters
     clusters = {}
     for doc_id, label in zip(doc_ids, labels):
         clusters.setdefault(label, []).append(doc_id)
 
     return [(label, cluster) for label, cluster in clusters.items()], vectorizer, X
-
-from scipy.stats import entropy
-from scipy.special import rel_entr
-from sklearn.metrics.pairwise import cosine_distances
-import numpy as np
 
 def interpret(cluster, D, global_centroid=None, global_vectorizer=None, args=None):
     cluster_ids = set(cluster[1])
@@ -55,16 +51,13 @@ def interpret(cluster, D, global_centroid=None, global_vectorizer=None, args=Non
     vectorizer = global_vectorizer
     X = vectorizer.transform(texts)
 
-    # Compute and normalize cluster centroid
     cluster_centroid = np.asarray(X.mean(axis=0)).flatten()
     cluster_centroid += 1e-12
     cluster_centroid /= cluster_centroid.sum()
 
-    # Normalize global centroid
     global_vec = global_centroid + 1e-12
     global_vec /= global_vec.sum()
 
-    # KL divergence scalar
     kl_div = entropy(cluster_centroid, global_vec)
 
     # Per-term KL contributions
@@ -95,7 +88,6 @@ def evaluate(X, labels, centroids):
     ch_score = calinski_harabasz_score(X.toarray(), labels)
     db_score = davies_bouldin_score(X.toarray(), labels)
 
-    # Variance decomposition
     sse = 0.0
     for i, centroid in enumerate(centroids):
         cluster_points = X[labels == i]
@@ -116,6 +108,44 @@ def evaluate(X, labels, centroids):
         "SSB / TSS ratio": ssb / tss if tss else None
     }
 
+def run_clustering_experiments(X, doc_ids, method_list, k_values):
+    results = []
+
+    for method in method_list:
+        print(f"\n=== {method.upper()} Clustering ===")
+        for k in k_values:
+            if method == "kmeans":
+                model = KMeans(n_clusters=k, random_state=42)
+            elif method == "agglomerative":
+                model = AgglomerativeClustering(n_clusters=k)
+            else:
+                continue
+
+            labels = model.fit_predict(X.toarray() if method == "agglomerative" else X)
+
+            silhouette = silhouette_score(X, labels)
+            ch = calinski_harabasz_score(X.toarray(), labels)
+            db = davies_bouldin_score(X.toarray(), labels)
+
+            print(f"k = {k:2d} | Silhouette: {silhouette:.4f} | Calinski-Harabasz: {ch:.2f} | Davies-Bouldin: {db:.4f}")
+            results.append((method, k, silhouette, ch, db))
+
+    plot_results(results)
+
+def compute_global_centroid(D):
+    docs = [(doc.doc_id, f"{doc.title or ''} {doc.abstract or ''}") for doc in D if doc.abstract]
+    _, texts = zip(*docs)
+
+    vectorizer = TfidfVectorizer(
+        stop_words='english',
+        tokenizer=preprocess_text,
+        preprocessor=None
+    )
+    X = vectorizer.fit_transform(texts)
+    global_centroid = np.asarray(X.mean(axis=0)).flatten()
+
+    return global_centroid, vectorizer
+
 def compute_global_centroid_represent_cluster(D, vectorizer):
     docs = [(doc.doc_id, f"{doc.title or ''} {doc.abstract or ''}") for doc in D if doc.abstract]
     _, texts = zip(*docs)
@@ -123,22 +153,3 @@ def compute_global_centroid_represent_cluster(D, vectorizer):
     X = vectorizer.transform(texts)
     global_centroid = np.asarray(X.mean(axis=0)).flatten()
     return global_centroid
-
-def compute_global_centroid(D):
-    docs = [(doc.doc_id, f"{doc.title or ''} {doc.abstract or ''}") for doc in D if doc.abstract]
-    _, texts = zip(*docs)
-
-    vectorizer = TfidfVectorizer(stop_words='english')
-    X = vectorizer.fit_transform(texts)
-    global_centroid = np.asarray(X.mean(axis=0)).flatten()
-
-    return global_centroid, vectorizer
-
-
-
-
-# vectorizer = TfidfVectorizer(
-    #     stop_words='english',
-    #     tokenizer=preprocess_text,
-    #     preprocessor=None
-    # )

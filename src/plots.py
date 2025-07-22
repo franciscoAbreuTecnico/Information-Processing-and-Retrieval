@@ -13,7 +13,6 @@ from wordcloud import WordCloud
 from sklearn.manifold import TSNE
 from sklearn.decomposition import TruncatedSVD
 
-## plots
 import matplotlib.pyplot as plt
 
 def plot_top_divergent_terms(cluster_id, terms, scores):
@@ -46,7 +45,6 @@ def plot_cluster_divergence(cluster_labels, kl_divergences, label_summaries):
     plt.xlabel("Cluster")
     plt.ylabel("KL Divergence")
 
-    # Annotate each bar with top divergent terms
     for bar, label in zip(bars, label_summaries):
         height = bar.get_height()
         plt.text(bar.get_x() + bar.get_width() / 2, height + 0.02, label,
@@ -59,7 +57,7 @@ def plot_cluster_divergence(cluster_labels, kl_divergences, label_summaries):
 def plot_tsne(X, labels, title="t-SNE of Clusters (Reduced TF-IDF)"):
     print("Reducing TF-IDF dimensions with TruncatedSVD...")
     svd = TruncatedSVD(n_components=50, random_state=42)
-    X_reduced = svd.fit_transform(X)  # X can stay sparse!
+    X_reduced = svd.fit_transform(X)
 
     print("Running t-SNE on reduced dimensions...")
     tsne = TSNE(n_components=2, perplexity=30, random_state=42, metric='cosine')
@@ -75,3 +73,27 @@ def plot_tsne(X, labels, title="t-SNE of Clusters (Reduced TF-IDF)"):
     plt.tight_layout()
     plt.show()
 
+def plot_results(results):
+    import seaborn as sns
+    import pandas as pd
+
+    df = pd.DataFrame(results, columns=["Method", "k", "Silhouette", "Calinski-Harabasz", "Davies-Bouldin"])
+    sns.set(style="whitegrid")
+
+    # Silhouette
+    plt.figure()
+    sns.lineplot(data=df, x="k", y="Silhouette", hue="Method", marker="o")
+    plt.title("Silhouette Score by k")
+    plt.show()
+
+    # CH
+    plt.figure()
+    sns.lineplot(data=df, x="k", y="Calinski-Harabasz", hue="Method", marker="o")
+    plt.title("Calinski-Harabasz Score by k")
+    plt.show()
+
+    # DB
+    plt.figure()
+    sns.lineplot(data=df, x="k", y="Davies-Bouldin", hue="Method", marker="o")
+    plt.title("Davies-Bouldin Score by k")
+    plt.show()
